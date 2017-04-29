@@ -1,5 +1,6 @@
 package org;
 
+import Database.DatabaseController;
 import Database.FakePoint;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,12 +27,17 @@ public class Point {
   int cost;
   boolean isBlocked;
 
+  // Arbitrarily Large, number of Points should never exceed this amount
+  public static final int ID_MAX = 3000001;
+
   //Constructor
   public Point(double xCoord, double yCoord, ArrayList<String> names) {
     this.xCoord = (int) xCoord;
     this.yCoord = (int) yCoord;
     this.names = names;
     this.isBlocked = false;
+    this.names = new ArrayList<String>();
+
   }
 
   public Point(double xCoord, double yCoord, int floor) {
@@ -91,6 +97,10 @@ public class Point {
     }
   }
 
+  public String toString(){
+    return this.getName();
+  }
+
   public ArrayList<Point> getNeighbors() {
     return neighbors;
   }
@@ -119,8 +129,12 @@ public class Point {
   }
 
   public String getName() {
-    if (names != null && names.size() > 0) {
-      return names.get(0);
+    if (names != null) {
+      if (names.size() > 0 && names.get(0) != null) {
+        if (names.get(0).equals("ELEVATOR"))
+          return "Elevator";
+        return names.get(0);
+      }
     }
     return null;
   }
@@ -245,21 +259,20 @@ public class Point {
 
     // test if the object isn't even the same type of class
     if (obj.getClass() != this.getClass())
-      return false;
-
+      return super.equals(obj);
     Point pobj = (Point) obj; // we can now safely assume that obj is a Point and not null
     // test if the primitive attributes are different
     if (pobj.xCoord != this.xCoord || pobj.yCoord != this.yCoord || pobj.id != this.id || pobj.floor != this.floor)
       return false;
 
     // next test the list of names
-    if (!pobj.names.equals(this.names))
+    if (pobj.names != null && this.names!= null && !pobj.names.equals(this.names))
       return false;
 
     //test the neighbors of each point
     FakePoint fthis = new FakePoint(this);
     FakePoint fpobj = new FakePoint(pobj); // change to fake so that we can compare the list of ids not the list of Points
-    if (!fpobj.neighbors.equals(fthis.neighbors))
+    if (!DatabaseController.compareNeighbors(fthis.neighbors, fpobj.getNeighbors()))
       return false;
 
     return true; // Everything checks out
@@ -269,4 +282,11 @@ public class Point {
   public Object clone()  {
     return new Point(xCoord,yCoord,names,id,neighbors, floor);
   }
+
+
+  public String toStringMoreInfo(){
+    return this.getName() + "(" + this.id + ") at x:" + xCoord + ", y:" + yCoord + " on floor " + this.floor;
+  }
+
 }
+
