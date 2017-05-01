@@ -1,7 +1,5 @@
 package org;
 
-import CredentialManager.CredentialManager;
-
 /**
  * Created by Tom on 4/2/2017.
  */
@@ -12,7 +10,6 @@ public class Session {
   //public Time sessionStart;
   public int zoomLevel;
   public Language currLang = Language.ENGLISH;
-  public CredentialManager credentialManager = new CredentialManager();
   public Dictionary dictionary = new Dictionary();
   public PathfindingStrategy algorithm = new Astar(); //Default to Astar
 
@@ -26,7 +23,6 @@ public class Session {
 
   public void setAlgorithm(PathfindingStrategy algorithm){
     this.algorithm = algorithm;
-    System.out.println(this.algorithm.toString());
   }
 
   public Session() {

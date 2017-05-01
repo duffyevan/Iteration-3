@@ -31,7 +31,7 @@ import javafx.util.Callback;
 import org.Point;
 
 /**
- * Created by Leon Zhang on 2017/4/1.
+ * Created by Haofan Zhang on 2017/4/1.
  */
 public class SearchMenuController extends CentralUIController implements Initializable {
   private ArrayList<Physician> docs;
@@ -42,6 +42,7 @@ public class SearchMenuController extends CentralUIController implements Initial
   private int searchMode = 0;
   private boolean isST = false;
   private boolean isBS = false;
+
   // define all ui elements
   @FXML
   private TableView<Physician> PhysicianDirectory;
@@ -78,6 +79,7 @@ public class SearchMenuController extends CentralUIController implements Initial
   @FXML
   private AnchorPane anchorPane;
 
+  @Override
   public void initialize(URL fxmlFileLocation, ResourceBundle resources) {
     addResolutionListener(anchorPane);
     setBackground(anchorPane);
@@ -86,12 +88,16 @@ public class SearchMenuController extends CentralUIController implements Initial
     sortDocs(docs);
     sortRooms(rooms);
 
+    PhysicianDirectory.setItems(HCOL);
+    RoomDirectory.setItems(RMOL);
+
     /* apply language configs */
     SearchMap.setText(dictionary.getString("Show on Map", currSession.getLanguage()));
     SearchInfo.setText(dictionary.getString("View Details", currSession.getLanguage()));
     SearchBack.setText(dictionary.getString("Back", currSession.getLanguage()));
     SearchField.setPromptText(dictionary.getString("Search Directory", currSession.getLanguage()));
 
+    /* Table value initializers */
     firstName.setCellValueFactory(
         new PropertyValueFactory<Physician, String>("firstName")
     );
@@ -129,55 +135,52 @@ public class SearchMenuController extends CentralUIController implements Initial
       }
     });
 
-    SearchField.setOnKeyPressed(new EventHandler<KeyEvent>() {
-      @Override
-      public void handle(KeyEvent event) {
-          if (SearchField.isFocused()) {
-            switch (event.getCode()) {
-              case BACK_SPACE:
-                if (!SearchField.getSelectedText().equals("")) {
-                  isST = true;
-                  SearchField.deleteText(SearchField.getSelection());
-                }
-                if (!SearchField.getText().equals("")) {
-                  isBS = true;
-                }
-                break;
-              case ENTER:
-                SearchField.deselect();
-                searchString = SearchField.getText();
-                updatePhysicians(docs);
-                updateRooms(rooms);
-                break;
+    /* auto complete and fuzzy search listeners */
+    SearchField.setOnKeyPressed(event -> {
+      if (SearchField.isFocused()) {
+        switch (event.getCode()) {
+          case BACK_SPACE:
+            if (!SearchField.getSelectedText().equals("")) {
+              isST = true;
+              SearchField.deleteText(SearchField.getSelection());
             }
-          }
+            if (!SearchField.getText().equals("")) {
+              isBS = true;
+            }
+            break;
+          case ENTER:
+            SearchField.deselect();
+            searchString = SearchField.getText();
+            updatePhysicians(docs);
+            updateRooms(rooms);
+            break;
         }
-
+      }
     });
-
     SearchField.textProperty().addListener((observable, oldValue, newValue) -> {
       if (!isST && !isBS) {
+        searchString = SearchField.getText();
         if (searchMode == 0) {
-          searchString = SearchField.getText();
-          autoCompleteDoc();
           updatePhysicians(docs);
+          autoCompleteDoc();
         } else if (searchMode == 1) {
-          searchString = SearchField.getText();
-          autoCompleteRoom();
           updateRooms(rooms);
+          autoCompleteRoom();
         }
-      } else if (isST && isBS) {
-        isST = false;
-        isBS = false;
       } else if (isBS) {
         searchString = SearchField.getText();
-        updatePhysicians(docs);
-        updateRooms(rooms);
+        if (searchMode == 0) {
+          updatePhysicians(docs);
+        } else if (searchMode == 1) {
+          updateRooms(rooms);
+        }
         isBS = false;
       } else {
         isST = false;
       }
     });
+
+    /* display doctor's directory first */
     toggleDoc();
   }
 
@@ -194,6 +197,7 @@ public class SearchMenuController extends CentralUIController implements Initial
     SearchInfo.setLayoutX(ButtonX);
     SearchMap.setLayoutX(ButtonX - SearchMap.getPrefWidth() - 20*(x_res)/750);
   }
+
   @Override
   public void customListenerY () {
     SearchRoom.setLayoutY(y_res * 0.2166666666666667 - SearchRoom.getPrefHeight()/2);
@@ -208,6 +212,9 @@ public class SearchMenuController extends CentralUIController implements Initial
     SearchMap.setLayoutY(SearchInfo.getLayoutY());
   }
 
+  /**
+   * change search mode to physician and show physician directory
+   */
   public void toggleDoc () {
     searchMode = 0;
     SearchDoc.setStyle("-fx-background-color: grey; -fx-text-fill: white;");
@@ -217,6 +224,10 @@ public class SearchMenuController extends CentralUIController implements Initial
     PhysicianDirectory.setVisible(true);
     RoomDirectory.setVisible(false);
   }
+
+  /**
+   * change search mode to room and show room directory
+   */
   public void toggleRoom () {
     searchMode = 1;
     SearchRoom.setStyle("-fx-background-color: grey; -fx-text-fill: white;");
@@ -227,7 +238,10 @@ public class SearchMenuController extends CentralUIController implements Initial
     RoomDirectory.setVisible(true);
   }
 
-
+  /**
+   * update the table for physicians and apply fuzzy search
+   * @param HCs the complete list of physicians
+   */
   public void updatePhysicians (List<Physician> HCs){
     HCOL.clear();
     if (searchString.equals("")) {
@@ -235,9 +249,12 @@ public class SearchMenuController extends CentralUIController implements Initial
     } else {
       HCOL.addAll(database.fuzzySearchPhysicians(searchString));
     }
-    PhysicianDirectory.setItems(HCOL);
   }
 
+  /**
+   * update the table for rooms and apply fuzzy search
+   * @param Rooms the complete list of rooms
+   */
   public void updateRooms (List<Point> Rooms){
     RMOL.clear();
     if (searchString.equals("")) {
@@ -245,29 +262,46 @@ public class SearchMenuController extends CentralUIController implements Initial
     } else {
       RMOL.addAll(database.fuzzySearchPoints(searchString));
     }
-    RoomDirectory.setItems(RMOL);
   }
 
+  /**
+   * auto complete the search field if any doctor's name contains the search string
+   */
   public void autoCompleteDoc () {
     if (!searchString.equals("")) {
       for (Physician doc : docs) {
-        String docName = doc.getFirstName() + " " + doc.getLastName();
-        if (docName.length() >= searchString.length()
-            && docName.substring(0, searchString.length()).equalsIgnoreCase(searchString)) {
-          final String newSearchString = doc.getFirstName() + " " + doc.getLastName();
-          isST = true;
-          SearchField.setText(newSearchString);
-          Platform.runLater(() -> {
-            if (SearchField.isFocused()) {
-              SearchField.selectRange(searchString.length(), newSearchString.length());
-            }
-          });
-          break;
+        String DocRegularName = doc.getFirstName() + " " + doc.getLastName();
+        String DocStrangeName = doc.getLastName() + ", " + doc.getFirstName();
+        if (DocRegularName.length() >= searchString.length()) {
+          if (DocRegularName.substring(0, searchString.length()).equalsIgnoreCase(searchString)) {
+            final String newSearchString = DocRegularName;
+            isST = true;
+            SearchField.setText(newSearchString);
+            Platform.runLater(() -> {
+              if (SearchField.isFocused()) {
+                SearchField.selectRange(searchString.length(), newSearchString.length());
+              }
+            });
+            break;
+          } else if (DocStrangeName.substring(0, searchString.length()).equalsIgnoreCase(searchString)) {
+            final String newSearchString = DocStrangeName;
+            isST = true;
+            SearchField.setText(newSearchString);
+            Platform.runLater(() -> {
+              if (SearchField.isFocused()) {
+                SearchField.selectRange(searchString.length(), newSearchString.length());
+              }
+            });
+            break;
+          }
         }
       }
     }
   }
 
+  /**
+   * auto complete the search field if any room's name contains the search string
+   */
   public void autoCompleteRoom () {
     if (!searchString.equals("")) {
       for (Point room : rooms) {
@@ -288,6 +322,9 @@ public class SearchMenuController extends CentralUIController implements Initial
     }
   }
 
+  /**
+   * set the scene to detail menu and view the info of the room or doc selected
+   */
   public void viewInfo () {
     Stage primaryStage = (Stage) anchorPane.getScene().getWindow();
     Physician selectedDoc = PhysicianDirectory.getSelectionModel().getSelectedItem();
@@ -299,21 +336,29 @@ public class SearchMenuController extends CentralUIController implements Initial
     }
   }
 
+  /**
+   * the detail menu controller builder. loads detail menu after controller is built.
+   * @param room the room to be shown. If null, display doc.
+   * @param doc the doctor to be shown. If null, display room
+   * doc and room will never be both null.
+   */
   private void DMCBuilder (Point room, Physician doc) {
     Stage primaryStage = (Stage) anchorPane.getScene().getWindow();
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource("/DetailMenu.fxml"));
       DetailMenuController DC = new DetailMenuController(room, doc);
       loader.setController(DC);
-      Pane mainPane = (Pane) loader.load();
-      primaryStage.setScene(new Scene(mainPane, x_res, y_res));
-      primaryStage.show();
+      Pane mainPane = loader.load();
+      primaryStage.getScene().setRoot(mainPane);
     } catch (Exception e) {
       System.out.println("Cannot load main menu");
       e.printStackTrace();
     }
   }
 
+  /**
+   * set the scene back to main mneu
+   */
   public void back () {
     Stage primaryStage = (Stage) anchorPane.getScene().getWindow();
     try {
@@ -324,12 +369,16 @@ public class SearchMenuController extends CentralUIController implements Initial
     }
   }
 
+  /**
+   * clear the search field
+   */
   public void clear () {
     SearchField.setText("");
-    updatePhysicians(docs);
-    updateRooms(rooms);
   }
 
+  /**
+   * set the scene to map view and display the room selected
+   */
   public void viewMap () {
     if (searchMode == 1 && RoomDirectory.getSelectionModel().getSelectedItem() != null) {
       Stage primaryStage = (Stage) anchorPane.getScene().getWindow();

@@ -1,4 +1,6 @@
 package UIControllers;
+
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.beans.value.ChangeListener;
@@ -15,9 +17,6 @@ import org.CentralController;
 import org.Language;
 import org.Session;
 
-/**
- * Created by Leon Zhang on 2017/4/1.
- */
 
 public class MainMenuController extends CentralUIController implements Initializable {
   // define all ui elements
@@ -41,17 +40,19 @@ public class MainMenuController extends CentralUIController implements Initializ
   @FXML
   private Label MapLabel;
 
+  @Override
   public void initialize(URL fxmlFileLocation, ResourceBundle resources) {
-    Session session = new Session();
     chooseLang();
     addResolutionListener(anchorPane);
     setBackground(anchorPane);
     CentralController.resetSession();
     applyLanguageConfig();
-//    enterAlias();
+    isLoggedIn = false;
   }
 
-
+  /**
+   * apply language configuration by set text from dictionary
+   */
   public void applyLanguageConfig(){
     SearchLabel.setText(dictionary.getString("Search", currSession.getLanguage()));
     MapLabel.setText(dictionary.getString("Map", currSession.getLanguage()));
@@ -63,7 +64,7 @@ public class MainMenuController extends CentralUIController implements Initializ
     MapButton.setLayoutX(5*(x_res/7) - MapButton.getFitWidth()/2);
     SearchButton.setLayoutX(2*(x_res/7) - SearchButton.getFitWidth()/2);
     MainKey.setLayoutX(x_res - MainKey.getFitWidth() - 10);
-    InfoButton.setLayoutX(x_res - InfoButton.getFitWidth() - 20);
+    InfoButton.setLayoutX(15*x_res/16);
     SearchLabel.setLayoutX(2*(x_res/7) - SearchLabel.getPrefWidth()/2);
   }
 
@@ -75,8 +76,13 @@ public class MainMenuController extends CentralUIController implements Initializ
     SearchButton.setLayoutY(6*(y_res/11) - SearchButton.getFitHeight()/2);
     SearchLabel.setLayoutY(6*(y_res/11) + 100);
     langBox.setLayoutY(y_res - 50);
+    MainKey.setLayoutY(y_res - 50);
+    InfoButton.setLayoutY(150*y_res/750);
   }
 
+  /**@author Haofan Zhang
+   * set the scene to user map
+   */
   public void gotoMap () {
     Stage primaryStage = (Stage) MainMenu.getScene().getWindow();
     try {
@@ -87,6 +93,9 @@ public class MainMenuController extends CentralUIController implements Initializ
     }
   }
 
+  /**@author Haofan Zhang
+   * set the scene to search menu
+   */
   public void gotoSearch () {
     Stage primaryStage = (Stage) MainMenu.getScene().getWindow();
     try {
@@ -95,14 +104,23 @@ public class MainMenuController extends CentralUIController implements Initializ
     }
   }
 
-  public void gotoAdmin () {
+  /**@author Haofan Zhang
+   * set the scene to admin login menu
+   */
+  public void gotoAdmin () throws IOException {
+    // for now sign up admin when loaded so people can get to admin view
+    //credentialManager.signup("admin", "admin", UserType.ADMIN);
+    // sign up staff when loaded for testing purposes
     Stage primaryStage = (Stage) MainMenu.getScene().getWindow();
     try {
       loadScene(primaryStage, "/AdminLogin.fxml");
-    } catch (Exception e) {
+    } catch (Exception e) { e.printStackTrace();
     }
   }
 
+  /**@author Haofan Zhang
+   * set the scene to about page
+   */
   public void gotoAbout() {
     Stage primaryStage = (Stage) MainMenu.getScene().getWindow();
     try {
@@ -111,6 +129,9 @@ public class MainMenuController extends CentralUIController implements Initializ
     }
   }
 
+  /**
+   * select and apply current language
+   */
   public void chooseLang() {
     langBox.getItems().add("ENGLISH");
     langBox.getItems().add("SPANISH");
@@ -136,30 +157,7 @@ public class MainMenuController extends CentralUIController implements Initializ
         });
   }
 
-//  public ArrayList<String> enterAlias(){
-////    Directory.getSelectionModel().selectedItemProperty().addListener(
-////        new ChangeListener<Physician>() {
-////          public void changed(ObservableValue<? extends Physician> ov,
-////              Physician old_val, Physician new_val) {
-////            int clicked = Directory.getSelectionModel().getSelectedIndex();
-////            if (clicked >= 0) {
-////              selectedHPIndex = clicked;
-////              selectedHP = docDisplay.get(selectedHPIndex);
-////            }
-////          }}
-////    );
-//
-//    TextInputDialog aliasEntry = new TextInputDialog();
-//    aliasEntry.setResizable(true);
-//    aliasEntry.setTitle("Alias Entry");
-//    aliasEntry.setHeaderText("Enter alias for point");
-//    aliasEntry.setContentText("Please enter an alias");
-//    Optional<String> res = aliasEntry.showAndWait();
-//    String s = res.toString().substring(9, res.toString().length()-1);
-//    ArrayList<String> aliases = new ArrayList<String>(Arrays.asList(s.split(", ")));
-//    return aliases;
-//    //ArrayList<String>(Arrays.asList(String.split))
-  }
+}
 
 
 
